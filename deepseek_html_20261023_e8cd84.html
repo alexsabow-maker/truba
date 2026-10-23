@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Калькулятор профильной трубы</title>
+<style>
+  :root{
+    --bg:#0f172a; --card:#1e293b; --muted:#94a3b8; --line:#334155;
+    --text:#e2e8f0; --accent:#38bdf8; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    background:linear-gradient(180deg,#0b1220,#0f172a); color:var(--text);
+    padding:20px;
+  }
+  h1{font-size:22px;margin:0 0 4px}
+  h2{font-size:16px;margin:0 0 8px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+  .wrap{max-width:1100px;margin:0 auto}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:16px; margin-bottom:14px; box-shadow:0 6px 20px rgba(0,0,0,.25);
+  }
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .field{display:flex;flex-direction:column;gap:4px;flex:1 1 160px}
+  label{font-size:12px;color:var(--muted)}
+  input{
+    background:#0b1324;border:1px solid var(--line);color:var(--text);
+    border-radius:9px;padding:9px 10px;font-size:14px;outline:none;width:100%;
+  }
+  input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(56,189,248,.15)}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{padding:8px 6px;text-align:left;font-size:13px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+  td input{padding:7px 8px}
+  .btn{
+    background:var(--accent);color:#06283a;border:0;border-radius:9px;
+    padding:10px 14px;font-weight:700;cursor:pointer;font-size:14px;
+  }
+  .btn:hover{filter:brightness(1.08)}
+  .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line);font-weight:600}
+  .btn.small{padding:6px 10px;font-size:12px;border-radius:8px}
+  .btn.danger{background:transparent;border:1px solid #7f1d1d;color:#fca5a5}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .stats{display:flex;gap:12px;flex-wrap:wrap}
+  .stat{
+    flex:1 1 180px;background:#0b1324;border:1px solid var(--line);
+    border-radius:12px;padding:12px 14px;
+  }
+  .stat .k{font-size:12px;color:var(--muted)}
+  .stat .v{font-size:24px;font-weight:800;margin-top:4px}
+  .v.ok{color:var(--ok)} .v.warn{color:var(--warn)} .v.accent{color:var(--accent)}
+  .pipe{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:12px;background:#0b1324}
+  .pipe-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap}
+  .pipe-title{font-weight:700;font-size:14px}
+  .pipe-meta{font-size:12px;color:var(--muted)}
+  .bar{
+    position:relative;height:26px;border-radius:8px;background:#111c33;
+    border:1px solid var(--line);overflow:hidden;display:flex;
+  }
+  .seg{
+    height:100%;display:flex;align-items:center;justify-content:center;
+    font-size:10px;color:#05202e;font-weight:700;border-right:1px solid rgba(0,0,0,.25);
+    overflow:hidden;white-space:nowrap;
+  }
+  .seg:last-child{border-right:0}
+  .pipe-parts{margin-top:8px;display:flex;flex-wrap:wrap;gap:8px}
+  .part-chip{
+    display:inline-flex;align-items:center;gap:6px;background:#0f1a2e;
+    border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;
+  }
+  .part-chip b{color:#fff}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--muted)}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .hint{font-size:12px;color:var(--muted);margin-top:8px}
+  .err{color:#fca5a5;font-size:12px;margin-top:6px}
+  .empty{color:var(--muted);font-size:13px;padding:10px 0}
+
+  /* печать */
+  @media print{
+    body{background:#fff;color:#000;padding:0}
+    .card{box-shadow:none;border:1px solid #bbb;background:#fff;color:#000}
+    .btn,.toolbar,#resultCard .legend{display:none !important}
+    .stat,.pipe,.part-chip{background:#fff;color:#000;border-color:#bbb}
+    .v,.pipe-title,th{color:#000}
+    .bar{border-color:#bbb}
+    .seg{color:#000}
+    .sub,.k,.pipe-meta,.hint,label{color:#555}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Калькулятор профильной трубы</h1>
+  <div class="sub">Укажите, какая труба продаётся, какие детали нужны — приложение посчитает, сколько труб купить, и даст Excel для закупки.</div>
+
+  <div class="card">
+    <div class="row">
+      <div class="field">
+        <label>Длина продаваемой трубы, мм</label>
+        <input id="stock" type="number" min="1" step="1" value="6000">
+      </div>
+      <div class="field">
+        <label>Ширина пропила (рез), мм</label>
+        <input id="kerf" type="number" min="0" step="0.1" value="3">
+      </div>
+      <div class="field">
+        <label>Название трубы (для Excel)</label>
+        <input id="pipeName" type="text" value="Профильная труба 40×20">
+      </div>
+    </div>
+    <div class="hint">Ширина пропила учитывается между деталями на одной трубе. Если не знаете — оставьте 3 мм.</div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="font-weight:700">Детали</div>
+      <button class="btn ghost small" id="addRow">+ Добавить деталь</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:44%">Название</th>
+          <th style="width:26%">Длина, мм</th>
+          <th style="width:20%">Кол-во, шт</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div id="formError" class="err"></div>
+    <div class="toolbar">
+      <button class="btn" id="calc">Рассчитать</button>
+      <button class="btn ghost" id="sample">Пример</button>
+      <button class="btn ghost" id="clear">Очистить</button>
+    </div>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none">
+    <div class="stats" id="stats"></div>
+
+    <div class="toolbar" style="margin-top:14px">
+      <button class="btn" id="exportXls">Скачать Excel</button>
+      <button class="btn ghost" id="printBtn">Печать</button>
+    </div>
+
+    <div style="margin-top:18px">
+      <h2>Спецификация деталей (для закупки)</h2>
+      <table id="specTable">
+        <thead>
+          <tr>
+            <th>Деталь</th>
+            <th>Длина, мм</th>
+            <th>Кол-во, шт</th>
+            <th>Итого длина, мм</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:18px">
+      <h2>Раскрой по трубам</h2>
+      <div id="pipes"></div>
+      <div class="legend" id="legend"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const rowsEl = $('#rows');
+const COLORS = ['#38bdf8','#22c55e','#f59e0b','#a78bfa','#f472b6','#2dd4bf','#fb7185','#93c5fd','#facc15','#4ade80'];
+
+let colorMap = new Map();
+let colorIdx = 0;
+function colorFor(name){
+  if(!colorMap.has(name)){
+    colorMap.set(name, COLORS[colorIdx % COLORS.length]);
+    colorIdx++;
+  }
+  return colorMap.get(name);
+}
+function escapeAttr(v){ return String(v).replace(/"/g,'&quot;'); }
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmt(n){
+  const r = Math.round(n * 10) / 10;
+  return r.toLocaleString('ru-RU', {maximumFractionDigits: 1});
+}
+
+function addRow(name='', len='', qty=1){
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input class="d-name" type="text" placeholder="Например, стойка" value="${escapeAttr(name)}"></td>
+    <td><input class="d-len" type="number" min="1" step="1" placeholder="1200" value="${escapeAttr(len)}"></td>
+    <td><input class="d-qty" type="number" min="1" step="1" value="${escapeAttr(qty)}"></td>
+    <td style="text-align:right"><button class="btn danger small" title="Удалить">✕</button></td>
+  `;
+  tr.querySelector('button').addEventListener('click', ()=> tr.remove());
+  rowsEl.appendChild(tr);
+}
+
+function readItems(){
+  const items = [];
+  let bad = false;
+  rowsEl.querySelectorAll('tr').forEach((tr, i) => {
+    const name = tr.querySelector('.d-name').value.trim() || `Деталь ${i+1}`;
+    const len = parseFloat(tr.querySelector('.d-len').value);
+    const qty = parseInt(tr.querySelector('.d-qty').value, 10);
+    if(!isFinite(len) || len <= 0 || !isFinite(qty) || qty <= 0){
+      if(tr.querySelector('.d-len').value || tr.querySelector('.d-qty').value) bad = true;
+      return;
+    }
+    items.push({name, len, qty});
+  });
+  return {items, bad};
+}
+
+/* ---------- раскрой ---------- */
+function calculate(items, stockLen, kerf){
+  const pieces = [];
+  for(const it of items){
+    for(let k=0;k<it.qty;k++) pieces.push({name:it.name, len:it.len});
+  }
+  pieces.sort((a,b)=> b.len - a.len || a.name.localeCompare(b.name));
+
+  const tooLong = pieces.filter(p => p.len > stockLen);
+  const stock = [];
+  const EPS = 1e-9;
+
+  for(const p of pieces){
+    if(p.len > stockLen) continue;
+    let best = -1, bestRemain = Infinity;
+    for(let i=0;i<stock.length;i++){
+      const s = stock[i];
+      const remain = stockLen - s.used;
+      const need = s.pieces.length ? p.len + kerf : p.len;
+      if(need <= remain + EPS && remain - need < bestRemain){
+        bestRemain = remain - need;
+        best = i;
+      }
+    }
+    if(best === -1){
+      stock.push({pieces:[p], used:p.len});
+    } else {
+      const s = stock[best];
+      const need = s.pieces.length ? p.len + kerf : p.len;
+      s.used += need;
+      s.pieces.push(p);
+    }
+  }
+  return {pieces, stock, tooLong, stockLen, kerf};
+}
+
+/* группируем детали по имени внутри одной трубы: [{name,len,qty}] */
+function groupPieces(pieces){
+  const map = new Map();
+  for(const p of pieces){
+    const key = p.name + '|' + p.len;
+    if(!map.has(key)) map.set(key, {name:p.name, len:p.len, qty:0});
+    map.get(key).qty++;
+  }
+  return [...map.values()];
+}
+
+/* спецификация: сгруппировать одинаковые детали по имени+длине */
+function buildSpec(items){
+  const map = new Map();
+  for(const it of items){
+    const key = it.name + '|' + it.len;
+    if(!map.has(key)) map.set(key, {name:it.name, len:it.len, qty:0});
+    map.get(key).qty += it.qty;
+  }
+  return [...map.values()].sort((a,b)=> a.name.localeCompare(b.name) || a.len - b.len);
+}
+
+/* ---------- отрисовка ---------- */
+let lastResult = null; // для экспорта
+
+function render(items, stockLen, kerf){
+  const res = calculate(items, stockLen, kerf);
+  const spec = buildSpec(items);
+  const pipeName = $('#pipeName').value.trim() || 'Профильная труба';
+
+  const totalPieces = res.pieces.length;
+  const totalCutLength = res.pieces.reduce((s,p)=>s+p.len,0);
+  const totalUsed = res.stock.reduce((s,it)=>s+it.used,0);
+  const totalWaste = res.stock.length * stockLen - totalUsed;
+  const util = res.stock.length ? (totalUsed / (res.stock.length*stockLen) * 100) : 0;
+
+  lastResult = {res, spec, stockLen, kerf, pipeName,
+    totalPieces, totalCutLength, totalWaste, util};
+
+  $('#resultCard').style.display = 'block';
+
+  $('#stats').innerHTML = `
+    <div class="stat"><div class="k">Нужно купить труб</div><div class="v accent">${res.stock.length} шт</div></div>
+    <div class="stat"><div class="k">Всего деталей</div><div class="v">${totalPieces} шт</div></div>
+    <div class="stat"><div class="k">Общая длина деталей</div><div class="v">${fmt(totalCutLength)} мм</div></div>
+    <div class="stat"><div class="k">Отходы</div><div class="v warn">${fmt(totalWaste)} мм</div></div>
+    <div class="stat"><div class="k">Полезное использование</div><div class="v ${util>=85?'ok':'warn'}">${util.toFixed(1)}%</div></div>
+  `;
+
+  // Спецификация деталей
+  const specBody = $('#specTable tbody');
+  specBody.innerHTML = spec.map(s => `
+    <tr>
+      <td>${escapeHtml(s.name)}</td>
+      <td>${fmt(s.len)}</td>
+      <td><b>${s.qty}</b></td>
+      <td>${fmt(s.len * s.qty)}</td>
+    </tr>
+  `).join('');
+
+  // Раскрой
+  const pipesEl = $('#pipes');
+  pipesEl.innerHTML = '';
+
+  if(res.tooLong.length){
+    const names = [...new Set(res.tooLong.map(p=>p.name))].join(', ');
+    const div = document.createElement('div');
+    div.className = 'err';
+    div.textContent = `Внимание: детали длиннее трубы (${stockLen} мм): ${names}. Они не будут разложены.`;
+    pipesEl.appendChild(div);
+  }
+  if(res.stock.length === 0){
+    pipesEl.innerHTML += '<div class="empty">Нет деталей для расчёта.</div>';
+  }
+
+  res.stock.forEach((s, idx) => {
+    const remain = stockLen - s.used;
+    const pipe = document.createElement('div');
+    pipe.className = 'pipe';
+
+    const head = document.createElement('div');
+    head.className = 'pipe-head';
+    head.innerHTML = `
+      <div class="pipe-title">Труба №${idx+1}</div>
+      <div class="pipe-meta">остаток: ${fmt(remain)} мм · деталей: ${s.pieces.length} шт</div>
+    `;
+    pipe.appendChild(head);
+
+    // полоса
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    s.pieces.forEach((p, i) => {
+      const c = colorFor(p.name);
+      const seg = document.createElement('div');
+      seg.className = 'seg';
+      const share = (p.len / stockLen) * 100;
+      seg.style.width = share + '%';
+      seg.style.background = c;
+      seg.title = `${p.name}: ${p.len} мм`;
+      seg.textContent = share > 6 ? p.len : '';
+      bar.appendChild(seg);
+
+      if(i < s.pieces.length - 1 && kerf > 0){
+        const k = document.createElement('div');
+        k.style.width = (kerf / stockLen * 100) + '%';
+        k.style.background = '#475569';
+        k.style.minWidth = '1px';
+        k.title = `пропил ${kerf} мм`;
+        bar.appendChild(k);
+      }
+    });
+    if(remain > 0){
+      const w = document.createElement('div');
+      w.style.width = (remain / stockLen * 100) + '%';
+      w.style.background = 'repeating-linear-gradient(45deg,#1e293b,#1e293b 6px,#243247 6px,#243247 12px)';
+      w.title = `остаток ${fmt(remain)} мм`;
+      bar.appendChild(w);
+    }
+    pipe.appendChild(bar);
+
+    // детали с количеством
+    const parts = document.createElement('div');
+    parts.className = 'pipe-parts';
+    groupPieces(s.pieces).forEach(g => {
+      const chip = document.createElement('span');
+      chip.className = 'part-chip';
+      chip.innerHTML = `<span class="dot" style="background:${colorFor(g.name)}"></span>${escapeHtml(g.name)} · ${fmt(g.len)} мм × <b>${g.qty} шт</b>`;
+      parts.appendChild(chip);
+    });
+    pipe.appendChild(parts);
+
+    pipesEl.appendChild(pipe);
+  });
+
+  // легенда
+  const names = [...new Set(res.stock.flatMap(s=>s.pieces.map(p=>p.name)))];
+  $('#legend').innerHTML = names.map(n =>
+    `<span><span class="dot" style="background:${colorFor(n)}"></span>${escapeHtml(n)}</span>`
+  ).join('') + `<span><span class="dot" style="background:#475569"></span>пропил</span>`;
+}
+
+function run(){
+  const errEl = $('#formError');
+  errEl.textContent = '';
+  const stockLen = parseFloat($('#stock').value);
+  const kerf = parseFloat($('#kerf').value);
+  if(!isFinite(stockLen) || stockLen <= 0){ errEl.textContent = 'Укажите корректную длину трубы.'; return; }
+  if(!isFinite(kerf) || kerf < 0){ errEl.textContent = 'Ширина пропила должна быть 0 или больше.'; return; }
+
+  const {items, bad} = readItems();
+  if(bad) errEl.textContent = 'Некоторые строки заполнены не полностью — они пропущены.';
+  if(items.length === 0){ errEl.textContent = 'Добавьте хотя бы одну деталь с длиной и количеством.'; return; }
+
+  render(items, stockLen, kerf);
+}
+
+/* ---------- экспорт в Excel (.xls через HTML-таблицы) ---------- */
+function exportExcel(){
+  if(!lastResult){ run(); if(!lastResult) return; }
+  const {res, spec, stockLen, kerf, pipeName, totalPieces, totalCutLength, totalWaste, util} = lastResult;
+
+  const td = (v)=> `<td>${v}</td>`;
+  const th = (v)=> `<th>${v}</th>`;
+
+  // Лист 1 — сводка
+  const summary = `
+    <table border="1">
+      <tr><th colspan="2">Расчёт профильной трубы</th></tr>
+      <tr>${td('Труба')}${td(pipeName)}</tr>
+      <tr>${td('Длина трубы, мм')}${td(stockLen)}</tr>
+      <tr>${td('Ширина пропила, мм')}${td(kerf)}</tr>
+      <tr>${td('Нужно купить труб, шт')}${td(res.stock.length)}</tr>
+      <tr>${td('Всего деталей, шт')}${td(totalPieces)}</tr>
+      <tr>${td('Общая длина деталей, мм')}${td(Math.round(totalCutLength))}</tr>
+      <tr>${td('Отходы, мм')}${td(Math.round(totalWaste))}</tr>
+      <tr>${td('Полезное использование, %')}${td(util.toFixed(1))}</tr>
+    </table>
+  `;
+
+  // Лист 2 — спецификация деталей
+  const specRows = spec.map(s => `
+    <tr>${td(escapeHtml(s.name))}${td(s.len)}${td(s.qty)}${td(Math.round(s.len*s.qty))}</tr>
+  `).join('');
+  const specSheet = `
+    <table border="1">
+      <tr><th colspan="4">Спецификация деталей (${pipeName})</th></tr>
+      <tr>${th('Деталь')}${th('Длина, мм')}${th('Кол-во, шт')}${th('Итого длина, мм')}</tr>
+      ${specRows}
+      <tr>${th('Итого')}${th('')}${th(totalPieces)}${th(Math.round(totalCutLength))}</tr>
+      <tr>${td('Труб к закупке, шт')}${td('')}${td('')}${td(res.stock.length)}</tr>
+    </table>
+  `;
+
+  // Лист 3 — раскрой
+  let cutRows = '';
+  res.stock.forEach((s, idx) => {
+    const remain = stockLen - s.used;
+    cutRows += `<tr>${td('Труба №'+(idx+1))}${td('')}${td('')}${td('остаток: '+Math.round(remain)+' мм')}</tr>`;
+    groupPieces(s.pieces).forEach(g => {
+      cutRows += `<tr>${td(escapeHtml(g.name))}${td(g.len)}${td(g.qty)}${td(g.len*g.qty)}</tr>`;
+    });
+  });
+  const cutSheet = `
+    <table border="1">
+      <tr><th colspan="4">Раскрой по трубам (${pipeName})</th></tr>
+      <tr>${th('Деталь')}${th('Длина, мм')}${th('Кол-во, шт')}${th('Сумма длины, мм')}</tr>
+      ${cutRows}
+    </table>
+  `;
+
+  const html = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office"
+          xmlns:x="urn:schemas-microsoft-com:office:excel"
+          xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta charset="utf-8">
+      <!--[if gte mso 9]><xml>
+        <x:ExcelWorkbook><x:ExcelWorksheets>
+          <x:ExcelWorksheet><x:Name>Сводка</x:Name><x:WorksheetOptions/></x:ExcelWorksheet>
+          <x:ExcelWorksheet><x:Name>Спецификация</x:Name><x:WorksheetOptions/></x:ExcelWorksheet>
+          <x:ExcelWorksheet><x:Name>Раскрой</x:Name><x:WorksheetOptions/></x:ExcelWorksheet>
+        </x:ExcelWorksheets></x:ExcelWorkbook>
+      </xml><![endif]-->
+    </head>
+    <body>
+      ${summary}
+      <br/>
+      ${specSheet}
+      <br/>
+      ${cutSheet}
+    </body>
+    </html>
+  `;
+
+  const blob = new Blob(['\ufeff', html], {type:'application/vnd.ms-excel;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const safeName = (pipeName || 'труба').replace(/[\\/:*?"<>|]+/g,'_');
+  a.href = url;
+  a.download = `Расчёт_${safeName}_${new Date().toISOString().slice(0,10)}.xls`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=> URL.revokeObjectURL(url), 2000);
+}
+
+/* ---------- события ---------- */
+$('#addRow').addEventListener('click', ()=> addRow());
+$('#calc').addEventListener('click', run);
+$('#exportXls').addEventListener('click', exportExcel);
+$('#printBtn').addEventListener('click', ()=> window.print());
+
+$('#sample').addEventListener('click', ()=>{
+  rowsEl.innerHTML = '';
+  colorMap = new Map(); colorIdx = 0;
+  addRow('Стойка', 1200, 4);
+  addRow('Перекладина', 900, 6);
+  addRow('Укосина', 750, 4);
+  addRow('Поперечина', 1500, 2);
+  $('#stock').value = 6000;
+  $('#kerf').value = 3;
+  run();
+});
+
+$('#clear').addEventListener('click', ()=>{
+  rowsEl.innerHTML = '';
+  colorMap = new Map(); colorIdx = 0;
+  lastResult = null;
+  addRow();
+  $('#resultCard').style.display = 'none';
+  $('#formError').textContent = '';
+});
+
+// старт
+addRow();
+addRow();
+</script>
+</body>
+</html>
